@@ -1,9 +1,9 @@
-// ═══════════════════════════════════════════════════════════
+ ═══════════════════════════════════════════════════════════
 // ESTADO E STORAGE
 // ═══════════════════════════════════════════════════════════
 const STORE = 'meu-plano-v3';
 const DAY = 86400000;
-
+ 
 const defaultState = {
   settings: {
     cycleStart: '2026-08-19',
@@ -21,14 +21,14 @@ const defaultState = {
   dailyNotes: {}, dailyGoals: {}, planTasks: {}, weeklyTasks: {},
   weights: [] // [{date, kg}]
 };
-
+ 
 let state = loadState();
 let selectedWeekDate = todayKey();
 let deferredPrompt = null;
 let toastTimer = null;
-
+ 
 function cloneDefault() { return JSON.parse(JSON.stringify(defaultState)); }
-
+ 
 function loadState() {
   try {
     const parsed = JSON.parse(localStorage.getItem(STORE));
@@ -41,9 +41,9 @@ function loadState() {
     return s;
   } catch { return cloneDefault(); }
 }
-
+ 
 function persist() { localStorage.setItem(STORE, JSON.stringify(state)); }
-
+ 
 // ═══════════════════════════════════════════════════════════
 // UTILITÁRIOS DE DATA
 // ═══════════════════════════════════════════════════════════
@@ -59,7 +59,7 @@ function durationText(ms, short=false) { const t=Math.max(0,Math.floor(ms/60000)
 function timerText(ms) { const s=Math.max(0,Math.floor(ms/1000)); return `${pad(Math.floor(s/3600))}:${pad(Math.floor((s%3600)/60))}:${pad(s%60)}`; }
 function uid() { return `${Date.now()}-${Math.random().toString(16).slice(2)}`; }
 function esc(v='') { return String(v).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c])); }
-
+ 
 // ═══════════════════════════════════════════════════════════
 // ROTINA SEMANAL — coração do plano
 // ═══════════════════════════════════════════════════════════
@@ -73,12 +73,12 @@ const WEEK_ROUTINE = {
   5: { label:'Sexta',  emoji:'🏋️', tags:['gym','esport','study'], activities:['Academia (manhã — 06h30)','Estudo: Neurociência (30 min)','Esport (noite — após 20h)'], tip:'Dia cheio mas possível. Esport é relaxamento, não obrigação.' },
   6: { label:'Sábado', emoji:'🏋️', tags:['gym','study'],  activities:['Academia (manhã — 06h30)','Estudo: Livro — Harry Potter: A Pedra Filosofal (30–40 min)'], tip:'Último treino da semana. Amanhã é descanso.' },
 };
-
+ 
 const STUDY_ROTATION = [
   'Psicanálise','Neurociência','Livro — Harry Potter: A Pedra Filosofal',
   'Psicanálise','Neurociência','Livro — Harry Potter: A Pedra Filosofal','Revisão livre'
 ];
-
+ 
 // ═══════════════════════════════════════════════════════════
 // CICLO E PLANO
 // ═══════════════════════════════════════════════════════════
@@ -86,13 +86,13 @@ function cycleStart() { return fromKey(state.settings.cycleStart); }
 function cycleDay(key=todayKey()) { return Math.floor((fromKey(key)-cycleStart())/DAY); }
 function inCycle(key) { const d=cycleDay(key); return d>=0 && d<state.settings.weeks*7; }
 function weekNum(key=todayKey()) { return Math.floor(cycleDay(key)/7)+1; }
-
+ 
 function fastTargetForWeek(w) {
   if(w<=2) return 12;
   if(w<=4) return 16;
   return 24;
 }
-
+ 
 function dayPlan(key=todayKey()) {
   const weekday = fromKey(key).getDay();
   const r = WEEK_ROUTINE[weekday];
@@ -109,7 +109,7 @@ function dayPlan(key=todayKey()) {
     tip: r.tip
   };
 }
-
+ 
 // ═══════════════════════════════════════════════════════════
 // TOAST E NAVEGAÇÃO
 // ═══════════════════════════════════════════════════════════
@@ -119,7 +119,7 @@ function toast(msg) {
   clearTimeout(toastTimer);
   toastTimer=setTimeout(()=>el.classList.remove('show'),2600);
 }
-
+ 
 function switchView(name) {
   document.querySelectorAll('.view').forEach(v=>v.classList.toggle('active',v.id===`view-${name}`));
   document.querySelectorAll('.nav button').forEach((b,i)=>{
@@ -133,7 +133,7 @@ function switchView(name) {
   if(name==='settings') renderSettings();
   window.scrollTo({top:0,behavior:'smooth'});
 }
-
+ 
 // ═══════════════════════════════════════════════════════════
 // HEADER E CARDS DE HOJE
 // ═══════════════════════════════════════════════════════════
@@ -143,18 +143,18 @@ function renderHeader() {
   document.getElementById('dateStamp').textContent=formatDate(today,{weekday:'long',day:'numeric',month:'short'});
   document.getElementById('cycleStamp').textContent=inCycle()?`Dia ${cycleDay()+1} de ${state.settings.weeks*7} do ciclo`:'Ciclo concluído';
   document.getElementById('dayTitle').textContent=formatDate(today,{weekday:'long',day:'numeric',month:'long'});
-
+ 
   // Badges do dia
   const tagMap={fast:'pill-fast ⚡ Jejum',muay:'pill-muay 🥊 Muay Thai',gym:'pill-gym 🏋️ Academia',walk:'pill-walk 🚶 Caminhada',study:'pill-study 📚 Estudo',esport:'pill-esport 🎮 Esport'};
   const badges=document.getElementById('dayBadges');
   badges.innerHTML=(r?.tags||[]).map(t=>{const[cls,...txt]=tagMap[t]?.split(' ')||[]; return`<span class="day-pill ${cls}">${txt.join(' ')}</span>`;}).join('');
-
+ 
   document.getElementById('dayStatus').textContent=state.activeFast?'Jejum em andamento.':state.activeStudy?'Sessão de estudo ativa.':state.activeWorkout?'Treino em andamento.':r?.emoji+' '+r?.label||'Bom dia!';
   document.getElementById('dayDetail').textContent=state.activeFast?'A contagem segue até sua meta.':state.activeStudy?'O tempo será salvo no histórico.':state.activeWorkout?'Tempo e descrição salvos ao encerrar.':r?.tip||'';
   document.getElementById('heroCopy').textContent=state.settings.intention||'Jejum, treino, estudo — um passo de cada vez.';
   document.getElementById('heroEyebrow').textContent=state.settings.intention?'Intenção do ciclo':'Hoje, com calma';
 }
-
+ 
 // ═══════════════════════════════════════════════════════════
 // JEJUM
 // ═══════════════════════════════════════════════════════════
@@ -190,7 +190,7 @@ function renderFast() {
   }
   document.getElementById('targetHoursText').textContent=th;
 }
-
+ 
 function toggleFastNote(){const el=document.getElementById('fastNote');el.style.display=el.style.display==='none'?'block':'none';if(el.style.display==='block')el.focus();}
 function updateFastTarget(){state.settings.targetHours=Number(document.getElementById('fastTarget').value);persist();renderFast();}
 function updateFastPlannedTime(){state.settings.plannedFastTime=document.getElementById('fastPlannedTime').value;persist();renderFast();}
@@ -206,7 +206,7 @@ function toggleFast(){
   }
   renderAll();
 }
-
+ 
 // ═══════════════════════════════════════════════════════════
 // ESTUDO
 // ═══════════════════════════════════════════════════════════
@@ -240,7 +240,7 @@ function toggleStudy(){
   }
   renderAll();
 }
-
+ 
 // ═══════════════════════════════════════════════════════════
 // TREINO
 // ═══════════════════════════════════════════════════════════
@@ -276,7 +276,7 @@ function toggleWorkout(){
   }
   renderAll();
 }
-
+ 
 // ═══════════════════════════════════════════════════════════
 // TAREFAS DO DIA
 // ═══════════════════════════════════════════════════════════
@@ -308,7 +308,7 @@ function addActivity(){const inp=document.getElementById('activityInput'),text=i
 function toggleActivityDone(id){const a=(state.dailyGoals[todayKey()]||[]).find(i=>i.id===id);if(!a)return;a.done=!a.done;persist();renderAll();}
 function removeActivity(id){state.dailyGoals[todayKey()]=(state.dailyGoals[todayKey()]||[]).filter(i=>i.id!==id);persist();renderAll();}
 function saveDailyNote(){state.dailyNotes[todayKey()]=document.getElementById('dailyNote').value;persist();const s=document.getElementById('noteSaved');s.classList.add('show');clearTimeout(window.noteTimer);window.noteTimer=setTimeout(()=>s.classList.remove('show'),1000);}
-
+ 
 // ═══════════════════════════════════════════════════════════
 // ESTATÍSTICAS E GRÁFICOS
 // ═══════════════════════════════════════════════════════════
@@ -351,7 +351,7 @@ function renderWeekChart(){
   });
   chart.innerHTML=html;
 }
-
+ 
 // ═══════════════════════════════════════════════════════════
 // ROTINA
 // ═══════════════════════════════════════════════════════════
@@ -369,7 +369,7 @@ function renderRoutine(){
     </div>`;
   }).join('');
 }
-
+ 
 // ═══════════════════════════════════════════════════════════
 // PESO
 // ═══════════════════════════════════════════════════════════
@@ -399,7 +399,7 @@ function updateWeightUI(){
   if(note){note.textContent=last?`Último registro: ${last.kg}kg em ${formatShort(last.date)}. Meta: 85kg.`:'Registre seu peso toda semana, de manhã, em jejum.';}
   if(document.getElementById('currentWeight')) document.getElementById('currentWeight').value='';
 }
-
+ 
 // ═══════════════════════════════════════════════════════════
 // HISTÓRICO
 // ═══════════════════════════════════════════════════════════
@@ -411,7 +411,7 @@ function renderHistory(){
   fL.innerHTML=state.fasts.length?state.fasts.slice(0,15).map(f=>`<article class="record"><div><h3>${formatShort(new Date(f.start))}</h3><p>${formatTime(f.start)} → ${formatTime(f.end)}${f.note?` · ${esc(f.note)}`:''}</p></div><div class="record-time">${durationText(f.duration)}</div></article>`).join(''):'<p class="empty">Nenhum jejum ainda.</p>';
   sL.innerHTML=state.studySessions.length?state.studySessions.slice(0,15).map(s=>`<article class="record"><div><h3>${esc(s.subject)}</h3><p>${formatShort(new Date(s.start))} · ${formatTime(s.start)}${s.note?` · ${esc(s.note)}`:''}</p></div><div class="record-time">${durationText(s.duration)}</div></article>`).join(''):'<p class="empty">Nenhuma sessão ainda.</p>';
   wL.innerHTML=state.workouts.length?state.workouts.slice(0,15).map(w=>`<article class="record"><div><h3>${esc(w.type)}</h3><p>${formatShort(new Date(w.start))} · ${formatTime(w.start)}${w.note?` · ${esc(w.note)}`:''}</p></div><div class="record-time">${durationText(w.duration)}</div></article>`).join(''):'<p class="empty">Nenhum treino ainda.</p>';
-
+ 
   // Gráfico de peso
   const wc=document.getElementById('weightChart');
   if(state.weights.length>1){
@@ -426,7 +426,7 @@ function renderHistory(){
     wc.innerHTML='<p class="empty">Registre seu peso na aba Alimentação para ver o gráfico.</p>';
   }
 }
-
+ 
 // ═══════════════════════════════════════════════════════════
 // ANÁLISE
 // ═══════════════════════════════════════════════════════════
@@ -435,7 +435,7 @@ function renderAnalysis(){
   const insights=document.getElementById('insightList');
   const cons=document.getElementById('consistencyBars');
   const wa=document.getElementById('weightAnalysis');
-
+ 
   // Últimos 7 dias
   const today=new Date();
   let fastDays=0,studyDays=0,workoutDays=0,totalFastH=0,totalStudyM=0,totalWorkoutM=0;
@@ -445,7 +445,7 @@ function renderAnalysis(){
     if(state.studySessions.some(s=>localKey(new Date(s.start))===key)){studyDays++;totalStudyM+=state.studySessions.filter(s=>localKey(new Date(s.start))===key).reduce((s,x)=>s+(x.duration||0),0)/60000;}
     if(state.workouts.some(w=>localKey(new Date(w.start))===key)){workoutDays++;totalWorkoutM+=state.workouts.filter(w=>localKey(new Date(w.start))===key).reduce((s,w)=>s+(w.duration||0),0)/60000;}
   }
-
+ 
   grid.innerHTML=`
     <div class="analysis-card ${fastDays>=1?'good':'warn'}">
       <h3>⚡ Jejum</h3>
@@ -460,7 +460,7 @@ function renderAnalysis(){
       <p>${workoutDays} treino${workoutDays!==1?'s':''} · ${Math.round(totalWorkoutM)}min total. ${workoutDays===0?'Nenhum treino registrado.':workoutDays>=4?'Semana de treino completa!':workoutDays>=2?'Bom começo, pode mais.':'Abaixo do planejado.'}</p>
     </div>
   `;
-
+ 
   // Barras de consistência
   const cats=[
     {label:'Muay Thai',target:2,actual:state.workouts.filter(w=>{const d=new Date(w.start);return w.type==='Muay Thai'&&(nowMs()-w.start)<7*DAY;}).length},
@@ -473,7 +473,7 @@ function renderAnalysis(){
     const pct=Math.min(100,Math.round(c.actual/c.target*100));
     return `<div class="progress-row"><span class="progress-label">${c.label}</span><div class="progress-track"><div class="progress-fill" style="width:${pct}%"></div></div><span class="progress-val">${c.actual}/${c.target}</span></div>`;
   }).join('');
-
+ 
   // Insights
   const tips=[];
   if(fastDays===0) tips.push({t:'warn',title:'Sem jejum registrado',text:'Use o botão "Começar agora" na aba Hoje quando iniciar o jejum de terça.'});
@@ -482,7 +482,7 @@ function renderAnalysis(){
   if(streak()>=3) tips.push({t:'good',title:`${streak()} dias no ritmo!`,text:'Você está criando um hábito real. Cada dia conta.'});
   if(tips.length===0) tips.push({t:'good',title:'Continue assim',text:'Registre suas atividades diariamente para ver análises mais precisas.'});
   insights.innerHTML=tips.map(t=>`<div class="analysis-card ${t.t}"><h3>${t.title}</h3><p>${t.text}</p></div>`).join('');
-
+ 
   // Peso
   if(state.weights.length>=2){
     const first=state.weights[0],last=state.weights[state.weights.length-1];
@@ -493,7 +493,7 @@ function renderAnalysis(){
     wa.innerHTML='<p class="empty">Registre seu peso na aba Alimentação para ver a análise.</p>';
   }
 }
-
+ 
 // ═══════════════════════════════════════════════════════════
 // PLANNER E CALENDÁRIO
 // ═══════════════════════════════════════════════════════════
@@ -536,7 +536,7 @@ function renderPlanner(){
   document.getElementById('cycleProgress').textContent=inCycle()?`dia ${cycleDay()+1}`:'concluído';
   renderWeekAgenda();
 }
-
+ 
 // ═══════════════════════════════════════════════════════════
 // SETTINGS
 // ═══════════════════════════════════════════════════════════
@@ -557,7 +557,7 @@ function saveSettings(){
   if(sel) sel.options[2].text=`Livro — ${state.settings.currentBook}`;
   persist();renderAll();toast('Ajustes salvos!');
 }
-
+ 
 // ═══════════════════════════════════════════════════════════
 // BACKUP
 // ═══════════════════════════════════════════════════════════
@@ -582,7 +582,7 @@ function importBackup(e){
   };
   reader.readAsText(file);
 }
-
+ 
 // ═══════════════════════════════════════════════════════════
 // PWA
 // ═══════════════════════════════════════════════════════════
@@ -592,7 +592,7 @@ function installApp(){
 }
 window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredPrompt=e;document.getElementById('installButton').style.display='inline-flex';});
 window.addEventListener('appinstalled',()=>{document.getElementById('installButton').style.display='none';document.getElementById('installText').textContent='Aplicativo instalado!';});
-
+ 
 // ═══════════════════════════════════════════════════════════
 // RENDER GERAL
 // ═══════════════════════════════════════════════════════════
@@ -603,11 +603,11 @@ function renderAll(){
   const note=document.getElementById('dailyNote');
   if(note&&document.activeElement!==note) note.value=state.dailyNotes[todayKey()]||'';
 }
-
+ 
 // Init
 renderAll();
 if(new URLSearchParams(window.location.search).get('tab')==='planner') switchView('planner');
-
+ 
 // Tick a cada segundo para atualizar timers ativos
 setInterval(()=>{
   if(state.activeFast) renderFast();
@@ -622,78 +622,73 @@ if ('serviceWorker' in navigator) {
       .catch(err => console.log('SW erro:', err));
   });
 }
+ 
 // ═══════════════════════════════════════════════════════════
-// ASSISTENTE IA — Claude integrado ao app
+// ASSISTENTE IA
 // ═══════════════════════════════════════════════════════════
-
-// Histórico da conversa com a IA
 let aiHistory = [];
 let aiTyping = false;
-
-// Monta contexto com os dados do usuário para a IA
+ 
 function buildAIContext() {
   const today = new Date();
   const wd = today.getDay();
   const r = WEEK_ROUTINE[wd];
   const lastWeight = state.weights[state.weights.length - 1];
-  const totalFasts = state.fasts.length;
-  const totalWorkouts = state.workouts.length;
-  const totalStudy = state.studySessions.length;
-  const fastHours = state.fasts.reduce((s,f)=>s+(f.duration||0),0)/3600000;
   const w = weekNum();
-
-  return `Você é o assistente pessoal de saúde e rotina do usuário dentro do app "Meu Plano Diário". 
-Responda sempre em português brasileiro, de forma direta, prática e motivadora. Máximo 3 parágrafos.
-
+  const fastHours = state.fasts.reduce((s,f)=>s+(f.duration||0),0)/3600000;
+ 
+  return `Você é o assistente pessoal de saúde e rotina dentro do app Meu Plano Diário.
+Responda sempre em português brasileiro, de forma direta e motivadora. Máximo 3 parágrafos curtos.
+ 
 DADOS DO USUÁRIO HOJE (${today.toLocaleDateString('pt-BR')}):
-- Dia da semana: ${r?.label || 'Hoje'}
-- Rotina do dia: ${r?.activities?.join(', ') || 'livre'}
-- Fase do jejum: Semana ${w} (${fastTargetForWeek(w)}h de jejum)
-- Jejum ativo: ${state.activeFast ? 'SIM — em andamento' : 'não'}
-- Treino ativo: ${state.activeWorkout ? `SIM — ${state.activeWorkout.type}` : 'não'}
-- Estudo ativo: ${state.activeStudy ? `SIM — ${state.activeStudy.subject}` : 'não'}
-
-HISTÓRICO GERAL:
-- Total de jejuns registrados: ${totalFasts} (${fastHours.toFixed(1)}h total)
-- Total de treinos: ${totalWorkouts}
-- Total de sessões de estudo: ${totalStudy}
-- Peso atual: ${lastWeight ? lastWeight.kg + 'kg' : 'não registrado'}
-- Meta de peso: 85kg (começou em 104kg)
-- Livro atual: ${state.settings.currentBook || 'Harry Potter: A Pedra Filosofal'}
-
-PLANO SEMANAL:
-- Segunda e quinta: Muay Thai (manhã)
-- Terça: Jejum + Academia (noite)
-- Quarta, sexta, sábado: Academia
-- Domingo: Caminhada 30min
-- Estudos diários: Psicanálise, Neurociência, Livros
-
-Responda a pergunta do usuário com base nesses dados reais.`;
+- Dia: ${r?.label||'Hoje'} | Rotina: ${r?.activities?.join(', ')||'livre'}
+- Semana ${w} do ciclo | Jejum desta fase: ${fastTargetForWeek(w)}h
+- Jejum ativo: ${state.activeFast?'SIM':'não'}
+- Treino ativo: ${state.activeWorkout?state.activeWorkout.type:'não'}
+- Estudo ativo: ${state.activeStudy?state.activeStudy.subject:'não'}
+- Total jejuns: ${state.fasts.length} (${fastHours.toFixed(1)}h total)
+- Total treinos: ${state.workouts.length}
+- Peso atual: ${lastWeight?lastWeight.kg+'kg':'não registrado'} | Meta: 85kg
+- Livro: ${state.settings.currentBook||'Harry Potter: A Pedra Filosofal'}`;
 }
-
-// Envia mensagem para a IA
+ 
+function addAIMessage(role, text, isTyping=false) {
+  const chat = document.getElementById('aiChat');
+  if (!chat) return;
+  const div = document.createElement('div');
+  div.style.cssText = role==='user'
+    ? 'background:var(--ink);color:white;align-self:flex-end;padding:10px 14px;border-radius:14px 14px 4px 14px;font-size:13px;line-height:1.5;max-width:85%'
+    : 'background:var(--surface);border:1px solid var(--line);color:var(--ink);align-self:flex-start;padding:10px 14px;border-radius:14px 14px 14px 4px;font-size:13px;line-height:1.5;max-width:85%';
+  if (isTyping) {
+    div.innerHTML = '<span style="color:var(--muted)">Digitando...</span>';
+    div.dataset.typing = 'true';
+  } else {
+    div.innerHTML = text.replace(/\n/g,'<br>');
+  }
+  chat.appendChild(div);
+  chat.scrollTop = chat.scrollHeight;
+}
+ 
 async function sendAIMessage() {
   const input = document.getElementById('aiInput');
+  if (!input) return;
   const msg = input.value.trim();
   if (!msg || aiTyping) return;
-
+ 
   const apiKey = localStorage.getItem('ai_key');
-  if (!apiKey) {
-    showAISetup();
-    return;
-  }
-
+  if (!apiKey) { toast('Configure sua chave na seção abaixo!'); return; }
+ 
   input.value = '';
   addAIMessage('user', msg);
   aiTyping = true;
-  addAIMessage('assistant', '...', true);
-
-  aiHistory.push({ role: 'user', content: msg });
-
+  addAIMessage('assistant', '', true);
+ 
+  aiHistory.push({role:'user', content:msg});
+ 
   try {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
       body: JSON.stringify({
         model: 'claude-sonnet-4-6',
         max_tokens: 1000,
@@ -701,104 +696,78 @@ async function sendAIMessage() {
         messages: aiHistory.slice(-10)
       })
     });
-
-    const data = await response.json();
-    const reply = data.content?.[0]?.text || 'Não consegui responder agora. Tente novamente.';
-
-    // Remove typing indicator
-    const typing = document.querySelector('.ai-typing');
-    if (typing) typing.remove();
-
-    aiHistory.push({ role: 'assistant', content: reply });
+    const data = await res.json();
+    const reply = data.content?.[0]?.text || 'Não consegui responder. Tente novamente.';
+    document.querySelector('[data-typing="true"]')?.remove();
+    aiHistory.push({role:'assistant', content:reply});
     addAIMessage('assistant', reply);
-  } catch (err) {
-    const typing = document.querySelector('.ai-typing');
-    if (typing) typing.remove();
-    addAIMessage('assistant', 'Erro de conexão. Verifique sua internet e tente novamente.');
+  } catch(e) {
+    document.querySelector('[data-typing="true"]')?.remove();
+    addAIMessage('assistant', 'Erro de conexão. Verifique sua internet.');
   }
-
   aiTyping = false;
 }
-
-// Adiciona mensagem na tela
-function addAIMessage(role, text, isTyping = false) {
-  const chat = document.getElementById('aiChat');
-  if (!chat) return;
-
-  const div = document.createElement('div');
-  div.className = `ai-msg ai-msg-${role}${isTyping ? ' ai-typing' : ''}`;
-  div.innerHTML = isTyping
-    ? '<span class="ai-dot"></span><span class="ai-dot"></span><span class="ai-dot"></span>'
-    : text.replace(/\n/g, '<br>');
-  chat.appendChild(div);
-  chat.scrollTop = chat.scrollHeight;
+ 
+function askAI(text) {
+  const input = document.getElementById('aiInput');
+  if (input) { input.value = text; sendAIMessage(); }
 }
-
-// Mostra setup da API key
-function showAISetup() {
-  const chat = document.getElementById('aiChat');
-  if (!chat) return;
-  chat.innerHTML = `
-    <div class="ai-setup">
-      <div style="font-size:32px;margin-bottom:12px">🤖</div>
-      <h3 style="font-family:Fraunces,serif;margin-bottom:8px">Configurar Assistente</h3>
-      <p style="font-size:13px;color:var(--muted);margin-bottom:16px">Cole sua chave da API do Claude para ativar o assistente.</p>
-      <input class="field" id="apiKeyInput" type="password" placeholder="sk-ant-api03-..." style="margin-bottom:10px" />
-      <button class="button sage" onclick="saveAPIKey()" style="width:100%">Ativar Assistente</button>
-      <p style="font-size:11px;color:var(--muted);margin-top:10px">A chave fica salva apenas no seu dispositivo.</p>
-    </div>`;
-}
-
-// Salva API key
+ 
 function saveAPIKey() {
   const key = document.getElementById('apiKeyInput')?.value.trim();
-  if (!key || !key.startsWith('sk-ant-')) {
-    toast('Chave inválida. Deve começar com sk-ant-');
-    return;
-  }
+  if (!key || !key.startsWith('sk-ant-')) { toast('Chave inválida. Deve começar com sk-ant-'); return; }
   localStorage.setItem('ai_key', key);
-  initAIChat();
+  const input = document.getElementById('apiKeyInput');
+  if (input) input.value = '';
+  const status = document.getElementById('aiKeyStatus');
+  if (status) status.textContent = '✅ Assistente ativado!';
   toast('Assistente ativado!');
+  const chat = document.getElementById('aiChat');
+  if (chat) {
+    chat.innerHTML = '';
+    addAIMessage('assistant', '👋 Olá! Estou pronto. Tenho acesso aos seus dados de jejum, treino e estudos. O que quer saber?');
+  }
 }
-
-// Remove API key
+ 
 function removeAPIKey() {
   localStorage.removeItem('ai_key');
   aiHistory = [];
-  showAISetup();
-}
-
-// Sugestões rápidas
-const AI_SUGGESTIONS = [
-  'Como está meu progresso?',
-  'O que devo comer agora?',
-  'Dica para o jejum de hoje',
-  'Como foi minha semana?',
-  'Me motiva!',
-];
-
-// Inicializa o chat
-function initAIChat() {
+  const status = document.getElementById('aiKeyStatus');
+  if (status) status.textContent = 'Cole sua chave para ativar o assistente.';
   const chat = document.getElementById('aiChat');
-  if (!chat) return;
-
-  const apiKey = localStorage.getItem('ai_key');
-  if (!apiKey) {
-    showAISetup();
-    return;
-  }
-
-  chat.innerHTML = `
-    <div class="ai-welcome">
-      <div style="font-size:28px">🌿</div>
-      <p style="font-size:13px;color:var(--muted);margin-top:8px">Olá! Sou seu assistente pessoal. Tenho acesso aos seus dados de jejum, treino e estudos. Pergunte qualquer coisa!</p>
-    </div>
-    <div class="ai-suggestions">
-      ${AI_SUGGESTIONS.map(s => `<button class="ai-suggestion" onclick="askSuggestion('${s}')">${s}</button>`).join('')}
-    </div>`;
+  if (chat) chat.innerHTML = '';
+  toast('Chave removida.');
 }
-
-function askSuggestion(text) {
-  const input = document.getElementById('aiInput');
-  if (input) { input.value = text; sendAIMessage(); }
+ 
+// Verifica se já tem chave salva ao entrar na aba IA
+function checkSavedKey() {
+  const key = localStorage.getItem('ai_key');
+  const status = document.getElementById('aiKeyStatus');
+  const chat = document.getElementById('aiChat');
+  if (key && status) {
+    status.textContent = '✅ Assistente ativo — pronto para perguntas!';
+    if (chat && chat.children.length === 0) {
+      addAIMessage('assistant', '👋 Bem-vindo de volta! Tenho acesso aos seus dados. O que quer saber?');
+    }
+  }
+}
+ 
+// initAIChat — chamada ao entrar na aba IA
+function initAIChat() {
+  checkSavedKey();
+}
+ 
+// checkSavedKey — verifica se já tem chave salva
+function checkSavedKey() {
+  const key = localStorage.getItem('ai_key');
+  const status = document.getElementById('aiKeyStatus');
+  const chat = document.getElementById('aiChat');
+  if (key) {
+    if (status) status.textContent = '✅ Assistente ativo — pronto para perguntas!';
+    if (chat && chat.children.length === 0) {
+      addAIMessage('assistant', '👋 Bem-vindo de volta! Tenho acesso aos seus dados. O que quer saber?');
+    }
+  } else {
+    if (status) status.textContent = 'Cole sua chave para ativar o assistente.';
+  }
 }
