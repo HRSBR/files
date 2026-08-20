@@ -54,7 +54,8 @@
     <button onclick="switchView('planner')">Plano</button>
     <button onclick="switchView('history')">Histórico</button>
     <button onclick="switchView('analysis')">Análise</button>
-    <button onclick="switchView('settings')">Ajustes</button>
+    <button onclick="switchView('ai')">IA</button>
+  <button onclick="switchView('settings')">Ajustes</button>
   </nav>
 
   <!-- ── HOJE ── -->
@@ -334,6 +335,42 @@
       </div>
     </div>
   </section>
+
+  <!-- ── ASSISTENTE IA ── -->
+  <section class="view" id="view-ai">
+    <div class="grid grid-main">
+      <section class="card sage">
+        <div class="section-head">
+          <div><h2>🤖 Assistente IA</h2><p>Seu coach pessoal com acesso aos seus dados reais.</p></div>
+          <button class="button ghost small" onclick="removeAPIKey()" title="Trocar chave">⚙️</button>
+        </div>
+        <div class="ai-chat-wrap">
+          <div id="aiChat"></div>
+          <div class="ai-input-row">
+            <input class="field" id="aiInput" placeholder="Pergunte qualquer coisa..." onkeydown="if(event.key==='Enter') sendAIMessage()" />
+            <button class="button sage" onclick="sendAIMessage()">Enviar</button>
+          </div>
+        </div>
+      </section>
+      <div class="stack">
+        <section class="card">
+          <div class="section-head"><div><h2>O que perguntar</h2><p>Exemplos de perguntas que o assistente responde.</p></div></div>
+          <div class="meal-list">
+            <div class="meal"><div class="meal-time">💪</div><div class="meal-text"><strong>Treino</strong>Como foi minha semana de treinos? Estou no ritmo certo?</div></div>
+            <div class="meal"><div class="meal-time">⚡</div><div class="meal-text"><strong>Jejum</strong>Dicas para aguentar o jejum de hoje. O que posso beber?</div></div>
+            <div class="meal"><div class="meal-time">🍽️</div><div class="meal-text"><strong>Alimentação</strong>O que devo comer agora para não furar o plano?</div></div>
+            <div class="meal"><div class="meal-time">📚</div><div class="meal-text"><strong>Estudos</strong>Como organizar meu tempo de estudo hoje?</div></div>
+            <div class="meal"><div class="meal-time">📊</div><div class="meal-text"><strong>Análise</strong>Como está meu progresso rumo aos 85kg?</div></div>
+          </div>
+        </section>
+        <section class="card clay">
+          <div class="section-head"><div><h2>Privacidade</h2><p>Seus dados ficam só no seu dispositivo.</p></div></div>
+          <p style="font-size:12px;color:var(--muted);line-height:1.6">A chave da API é salva apenas no seu celular/computador. Os dados do app (jejum, treino, peso) são enviados à IA apenas quando você faz uma pergunta, para personalizar a resposta.</p>
+        </section>
+      </div>
+    </div>
+  </section>
+
 </main>
 
 <div class="toast" id="toast"></div>
@@ -464,7 +501,7 @@ function toast(msg) {
 function switchView(name) {
   document.querySelectorAll('.view').forEach(v=>v.classList.toggle('active',v.id===`view-${name}`));
   document.querySelectorAll('.nav button').forEach((b,i)=>{
-    const views=['today','routine','food','planner','history','analysis','settings'];
+    const views=['today','routine','food','planner','history','analysis','ai','settings'];
     b.classList.toggle('active',views[i]===name);
   });
   if(name==='planner') renderPlanner();
@@ -472,6 +509,7 @@ function switchView(name) {
   if(name==='analysis') renderAnalysis();
   if(name==='routine') renderRoutine();
   if(name==='settings') renderSettings();
+  if(name==='ai') initAIChat();
   window.scrollTo({top:0,behavior:'smooth'});
 }
 

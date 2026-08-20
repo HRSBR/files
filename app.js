@@ -622,3 +622,183 @@ if ('serviceWorker' in navigator) {
       .catch(err => console.log('SW erro:', err));
   });
 }
+// ═══════════════════════════════════════════════════════════
+// ASSISTENTE IA — Claude integrado ao app
+// ═══════════════════════════════════════════════════════════
+
+// Histórico da conversa com a IA
+let aiHistory = [];
+let aiTyping = false;
+
+// Monta contexto com os dados do usuário para a IA
+function buildAIContext() {
+  const today = new Date();
+  const wd = today.getDay();
+  const r = WEEK_ROUTINE[wd];
+  const lastWeight = state.weights[state.weights.length - 1];
+  const totalFasts = state.fasts.length;
+  const totalWorkouts = state.workouts.length;
+  const totalStudy = state.studySessions.length;
+  const fastHours = state.fasts.reduce((s,f)=>s+(f.duration||0),0)/3600000;
+  const w = weekNum();
+
+  return `Você é o assistente pessoal de saúde e rotina do usuário dentro do app "Meu Plano Diário". 
+Responda sempre em português brasileiro, de forma direta, prática e motivadora. Máximo 3 parágrafos.
+
+DADOS DO USUÁRIO HOJE (${today.toLocaleDateString('pt-BR')}):
+- Dia da semana: ${r?.label || 'Hoje'}
+- Rotina do dia: ${r?.activities?.join(', ') || 'livre'}
+- Fase do jejum: Semana ${w} (${fastTargetForWeek(w)}h de jejum)
+- Jejum ativo: ${state.activeFast ? 'SIM — em andamento' : 'não'}
+- Treino ativo: ${state.activeWorkout ? `SIM — ${state.activeWorkout.type}` : 'não'}
+- Estudo ativo: ${state.activeStudy ? `SIM — ${state.activeStudy.subject}` : 'não'}
+
+HISTÓRICO GERAL:
+- Total de jejuns registrados: ${totalFasts} (${fastHours.toFixed(1)}h total)
+- Total de treinos: ${totalWorkouts}
+- Total de sessões de estudo: ${totalStudy}
+- Peso atual: ${lastWeight ? lastWeight.kg + 'kg' : 'não registrado'}
+- Meta de peso: 85kg (começou em 104kg)
+- Livro atual: ${state.settings.currentBook || 'Harry Potter: A Pedra Filosofal'}
+
+PLANO SEMANAL:
+- Segunda e quinta: Muay Thai (manhã)
+- Terça: Jejum + Academia (noite)
+- Quarta, sexta, sábado: Academia
+- Domingo: Caminhada 30min
+- Estudos diários: Psicanálise, Neurociência, Livros
+
+Responda a pergunta do usuário com base nesses dados reais.`;
+}
+
+// Envia mensagem para a IA
+async function sendAIMessage() {
+  const input = document.getElementById('aiInput');
+  const msg = input.value.trim();
+  if (!msg || aiTyping) return;
+
+  const apiKey = localStorage.getItem('ai_key');
+  if (!apiKey) {
+    showAISetup();
+    return;
+  }
+
+  input.value = '';
+  addAIMessage('user', msg);
+  aiTyping = true;
+  addAIMessage('assistant', '...', true);
+
+  aiHistory.push({ role: 'user', content: msg });
+
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 1000,
+        system: buildAIContext(),
+        messages: aiHistory.slice(-10)
+      })
+    });
+
+    const data = await response.json();
+    const reply = data.content?.[0]?.text || 'Não consegui responder agora. Tente novamente.';
+
+    // Remove typing indicator
+    const typing = document.querySelector('.ai-typing');
+    if (typing) typing.remove();
+
+    aiHistory.push({ role: 'assistant', content: reply });
+    addAIMessage('assistant', reply);
+  } catch (err) {
+    const typing = document.querySelector('.ai-typing');
+    if (typing) typing.remove();
+    addAIMessage('assistant', 'Erro de conexão. Verifique sua internet e tente novamente.');
+  }
+
+  aiTyping = false;
+}
+
+// Adiciona mensagem na tela
+function addAIMessage(role, text, isTyping = false) {
+  const chat = document.getElementById('aiChat');
+  if (!chat) return;
+
+  const div = document.createElement('div');
+  div.className = `ai-msg ai-msg-${role}${isTyping ? ' ai-typing' : ''}`;
+  div.innerHTML = isTyping
+    ? '<span class="ai-dot"></span><span class="ai-dot"></span><span class="ai-dot"></span>'
+    : text.replace(/\n/g, '<br>');
+  chat.appendChild(div);
+  chat.scrollTop = chat.scrollHeight;
+}
+
+// Mostra setup da API key
+function showAISetup() {
+  const chat = document.getElementById('aiChat');
+  if (!chat) return;
+  chat.innerHTML = `
+    <div class="ai-setup">
+      <div style="font-size:32px;margin-bottom:12px">🤖</div>
+      <h3 style="font-family:Fraunces,serif;margin-bottom:8px">Configurar Assistente</h3>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:16px">Cole sua chave da API do Claude para ativar o assistente.</p>
+      <input class="field" id="apiKeyInput" type="password" placeholder="sk-ant-api03-..." style="margin-bottom:10px" />
+      <button class="button sage" onclick="saveAPIKey()" style="width:100%">Ativar Assistente</button>
+      <p style="font-size:11px;color:var(--muted);margin-top:10px">A chave fica salva apenas no seu dispositivo.</p>
+    </div>`;
+}
+
+// Salva API key
+function saveAPIKey() {
+  const key = document.getElementById('apiKeyInput')?.value.trim();
+  if (!key || !key.startsWith('sk-ant-')) {
+    toast('Chave inválida. Deve começar com sk-ant-');
+    return;
+  }
+  localStorage.setItem('ai_key', key);
+  initAIChat();
+  toast('Assistente ativado!');
+}
+
+// Remove API key
+function removeAPIKey() {
+  localStorage.removeItem('ai_key');
+  aiHistory = [];
+  showAISetup();
+}
+
+// Sugestões rápidas
+const AI_SUGGESTIONS = [
+  'Como está meu progresso?',
+  'O que devo comer agora?',
+  'Dica para o jejum de hoje',
+  'Como foi minha semana?',
+  'Me motiva!',
+];
+
+// Inicializa o chat
+function initAIChat() {
+  const chat = document.getElementById('aiChat');
+  if (!chat) return;
+
+  const apiKey = localStorage.getItem('ai_key');
+  if (!apiKey) {
+    showAISetup();
+    return;
+  }
+
+  chat.innerHTML = `
+    <div class="ai-welcome">
+      <div style="font-size:28px">🌿</div>
+      <p style="font-size:13px;color:var(--muted);margin-top:8px">Olá! Sou seu assistente pessoal. Tenho acesso aos seus dados de jejum, treino e estudos. Pergunte qualquer coisa!</p>
+    </div>
+    <div class="ai-suggestions">
+      ${AI_SUGGESTIONS.map(s => `<button class="ai-suggestion" onclick="askSuggestion('${s}')">${s}</button>`).join('')}
+    </div>`;
+}
+
+function askSuggestion(text) {
+  const input = document.getElementById('aiInput');
+  if (input) { input.value = text; sendAIMessage(); }
+}
