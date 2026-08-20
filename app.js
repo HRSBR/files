@@ -1,9 +1,9 @@
- ═══════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════
 // ESTADO E STORAGE
 // ═══════════════════════════════════════════════════════════
 const STORE = 'meu-plano-v3';
 const DAY = 86400000;
- 
+
 const defaultState = {
   settings: {
     cycleStart: '2026-08-19',
@@ -21,14 +21,14 @@ const defaultState = {
   dailyNotes: {}, dailyGoals: {}, planTasks: {}, weeklyTasks: {},
   weights: [] // [{date, kg}]
 };
- 
+
 let state = loadState();
 let selectedWeekDate = todayKey();
 let deferredPrompt = null;
 let toastTimer = null;
- 
+
 function cloneDefault() { return JSON.parse(JSON.stringify(defaultState)); }
- 
+
 function loadState() {
   try {
     const parsed = JSON.parse(localStorage.getItem(STORE));
@@ -41,9 +41,9 @@ function loadState() {
     return s;
   } catch { return cloneDefault(); }
 }
- 
+
 function persist() { localStorage.setItem(STORE, JSON.stringify(state)); }
- 
+
 // ═══════════════════════════════════════════════════════════
 // UTILITÁRIOS DE DATA
 // ═══════════════════════════════════════════════════════════
@@ -59,7 +59,7 @@ function durationText(ms, short=false) { const t=Math.max(0,Math.floor(ms/60000)
 function timerText(ms) { const s=Math.max(0,Math.floor(ms/1000)); return `${pad(Math.floor(s/3600))}:${pad(Math.floor((s%3600)/60))}:${pad(s%60)}`; }
 function uid() { return `${Date.now()}-${Math.random().toString(16).slice(2)}`; }
 function esc(v='') { return String(v).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c])); }
- 
+
 // ═══════════════════════════════════════════════════════════
 // ROTINA SEMANAL — coração do plano
 // ═══════════════════════════════════════════════════════════
@@ -73,12 +73,12 @@ const WEEK_ROUTINE = {
   5: { label:'Sexta',  emoji:'🏋️', tags:['gym','esport','study'], activities:['Academia (manhã — 06h30)','Estudo: Neurociência (30 min)','Esport (noite — após 20h)'], tip:'Dia cheio mas possível. Esport é relaxamento, não obrigação.' },
   6: { label:'Sábado', emoji:'🏋️', tags:['gym','study'],  activities:['Academia (manhã — 06h30)','Estudo: Livro — Harry Potter: A Pedra Filosofal (30–40 min)'], tip:'Último treino da semana. Amanhã é descanso.' },
 };
- 
+
 const STUDY_ROTATION = [
   'Psicanálise','Neurociência','Livro — Harry Potter: A Pedra Filosofal',
   'Psicanálise','Neurociência','Livro — Harry Potter: A Pedra Filosofal','Revisão livre'
 ];
- 
+
 // ═══════════════════════════════════════════════════════════
 // CICLO E PLANO
 // ═══════════════════════════════════════════════════════════
@@ -86,13 +86,13 @@ function cycleStart() { return fromKey(state.settings.cycleStart); }
 function cycleDay(key=todayKey()) { return Math.floor((fromKey(key)-cycleStart())/DAY); }
 function inCycle(key) { const d=cycleDay(key); return d>=0 && d<state.settings.weeks*7; }
 function weekNum(key=todayKey()) { return Math.floor(cycleDay(key)/7)+1; }
- 
+
 function fastTargetForWeek(w) {
   if(w<=2) return 12;
   if(w<=4) return 16;
   return 24;
 }
- 
+
 function dayPlan(key=todayKey()) {
   const weekday = fromKey(key).getDay();
   const r = WEEK_ROUTINE[weekday];
@@ -109,7 +109,7 @@ function dayPlan(key=todayKey()) {
     tip: r.tip
   };
 }
- 
+
 // ═══════════════════════════════════════════════════════════
 // TOAST E NAVEGAÇÃO
 // ═══════════════════════════════════════════════════════════
@@ -119,7 +119,7 @@ function toast(msg) {
   clearTimeout(toastTimer);
   toastTimer=setTimeout(()=>el.classList.remove('show'),2600);
 }
- 
+
 function switchView(name) {
   document.querySelectorAll('.view').forEach(v=>v.classList.toggle('active',v.id===`view-${name}`));
   document.querySelectorAll('.nav button').forEach((b,i)=>{
@@ -133,7 +133,7 @@ function switchView(name) {
   if(name==='settings') renderSettings();
   window.scrollTo({top:0,behavior:'smooth'});
 }
- 
+
 // ═══════════════════════════════════════════════════════════
 // HEADER E CARDS DE HOJE
 // ═══════════════════════════════════════════════════════════
@@ -143,18 +143,18 @@ function renderHeader() {
   document.getElementById('dateStamp').textContent=formatDate(today,{weekday:'long',day:'numeric',month:'short'});
   document.getElementById('cycleStamp').textContent=inCycle()?`Dia ${cycleDay()+1} de ${state.settings.weeks*7} do ciclo`:'Ciclo concluído';
   document.getElementById('dayTitle').textContent=formatDate(today,{weekday:'long',day:'numeric',month:'long'});
- 
+
   // Badges do dia
   const tagMap={fast:'pill-fast ⚡ Jejum',muay:'pill-muay 🥊 Muay Thai',gym:'pill-gym 🏋️ Academia',walk:'pill-walk 🚶 Caminhada',study:'pill-study 📚 Estudo',esport:'pill-esport 🎮 Esport'};
   const badges=document.getElementById('dayBadges');
   badges.innerHTML=(r?.tags||[]).map(t=>{const[cls,...txt]=tagMap[t]?.split(' ')||[]; return`<span class="day-pill ${cls}">${txt.join(' ')}</span>`;}).join('');
- 
+
   document.getElementById('dayStatus').textContent=state.activeFast?'Jejum em andamento.':state.activeStudy?'Sessão de estudo ativa.':state.activeWorkout?'Treino em andamento.':r?.emoji+' '+r?.label||'Bom dia!';
   document.getElementById('dayDetail').textContent=state.activeFast?'A contagem segue até sua meta.':state.activeStudy?'O tempo será salvo no histórico.':state.activeWorkout?'Tempo e descrição salvos ao encerrar.':r?.tip||'';
   document.getElementById('heroCopy').textContent=state.settings.intention||'Jejum, treino, estudo — um passo de cada vez.';
   document.getElementById('heroEyebrow').textContent=state.settings.intention?'Intenção do ciclo':'Hoje, com calma';
 }
- 
+
 // ═══════════════════════════════════════════════════════════
 // JEJUM
 // ═══════════════════════════════════════════════════════════
@@ -190,7 +190,7 @@ function renderFast() {
   }
   document.getElementById('targetHoursText').textContent=th;
 }
- 
+
 function toggleFastNote(){const el=document.getElementById('fastNote');el.style.display=el.style.display==='none'?'block':'none';if(el.style.display==='block')el.focus();}
 function updateFastTarget(){state.settings.targetHours=Number(document.getElementById('fastTarget').value);persist();renderFast();}
 function updateFastPlannedTime(){state.settings.plannedFastTime=document.getElementById('fastPlannedTime').value;persist();renderFast();}
@@ -206,7 +206,7 @@ function toggleFast(){
   }
   renderAll();
 }
- 
+
 // ═══════════════════════════════════════════════════════════
 // ESTUDO
 // ═══════════════════════════════════════════════════════════
@@ -240,7 +240,7 @@ function toggleStudy(){
   }
   renderAll();
 }
- 
+
 // ═══════════════════════════════════════════════════════════
 // TREINO
 // ═══════════════════════════════════════════════════════════
@@ -276,7 +276,7 @@ function toggleWorkout(){
   }
   renderAll();
 }
- 
+
 // ═══════════════════════════════════════════════════════════
 // TAREFAS DO DIA
 // ═══════════════════════════════════════════════════════════
@@ -308,7 +308,7 @@ function addActivity(){const inp=document.getElementById('activityInput'),text=i
 function toggleActivityDone(id){const a=(state.dailyGoals[todayKey()]||[]).find(i=>i.id===id);if(!a)return;a.done=!a.done;persist();renderAll();}
 function removeActivity(id){state.dailyGoals[todayKey()]=(state.dailyGoals[todayKey()]||[]).filter(i=>i.id!==id);persist();renderAll();}
 function saveDailyNote(){state.dailyNotes[todayKey()]=document.getElementById('dailyNote').value;persist();const s=document.getElementById('noteSaved');s.classList.add('show');clearTimeout(window.noteTimer);window.noteTimer=setTimeout(()=>s.classList.remove('show'),1000);}
- 
+
 // ═══════════════════════════════════════════════════════════
 // ESTATÍSTICAS E GRÁFICOS
 // ═══════════════════════════════════════════════════════════
@@ -351,7 +351,7 @@ function renderWeekChart(){
   });
   chart.innerHTML=html;
 }
- 
+
 // ═══════════════════════════════════════════════════════════
 // ROTINA
 // ═══════════════════════════════════════════════════════════
@@ -369,7 +369,7 @@ function renderRoutine(){
     </div>`;
   }).join('');
 }
- 
+
 // ═══════════════════════════════════════════════════════════
 // PESO
 // ═══════════════════════════════════════════════════════════
@@ -399,7 +399,7 @@ function updateWeightUI(){
   if(note){note.textContent=last?`Último registro: ${last.kg}kg em ${formatShort(last.date)}. Meta: 85kg.`:'Registre seu peso toda semana, de manhã, em jejum.';}
   if(document.getElementById('currentWeight')) document.getElementById('currentWeight').value='';
 }
- 
+
 // ═══════════════════════════════════════════════════════════
 // HISTÓRICO
 // ═══════════════════════════════════════════════════════════
@@ -411,7 +411,7 @@ function renderHistory(){
   fL.innerHTML=state.fasts.length?state.fasts.slice(0,15).map(f=>`<article class="record"><div><h3>${formatShort(new Date(f.start))}</h3><p>${formatTime(f.start)} → ${formatTime(f.end)}${f.note?` · ${esc(f.note)}`:''}</p></div><div class="record-time">${durationText(f.duration)}</div></article>`).join(''):'<p class="empty">Nenhum jejum ainda.</p>';
   sL.innerHTML=state.studySessions.length?state.studySessions.slice(0,15).map(s=>`<article class="record"><div><h3>${esc(s.subject)}</h3><p>${formatShort(new Date(s.start))} · ${formatTime(s.start)}${s.note?` · ${esc(s.note)}`:''}</p></div><div class="record-time">${durationText(s.duration)}</div></article>`).join(''):'<p class="empty">Nenhuma sessão ainda.</p>';
   wL.innerHTML=state.workouts.length?state.workouts.slice(0,15).map(w=>`<article class="record"><div><h3>${esc(w.type)}</h3><p>${formatShort(new Date(w.start))} · ${formatTime(w.start)}${w.note?` · ${esc(w.note)}`:''}</p></div><div class="record-time">${durationText(w.duration)}</div></article>`).join(''):'<p class="empty">Nenhum treino ainda.</p>';
- 
+
   // Gráfico de peso
   const wc=document.getElementById('weightChart');
   if(state.weights.length>1){
@@ -426,7 +426,7 @@ function renderHistory(){
     wc.innerHTML='<p class="empty">Registre seu peso na aba Alimentação para ver o gráfico.</p>';
   }
 }
- 
+
 // ═══════════════════════════════════════════════════════════
 // ANÁLISE
 // ═══════════════════════════════════════════════════════════
@@ -435,7 +435,7 @@ function renderAnalysis(){
   const insights=document.getElementById('insightList');
   const cons=document.getElementById('consistencyBars');
   const wa=document.getElementById('weightAnalysis');
- 
+
   // Últimos 7 dias
   const today=new Date();
   let fastDays=0,studyDays=0,workoutDays=0,totalFastH=0,totalStudyM=0,totalWorkoutM=0;
@@ -445,7 +445,7 @@ function renderAnalysis(){
     if(state.studySessions.some(s=>localKey(new Date(s.start))===key)){studyDays++;totalStudyM+=state.studySessions.filter(s=>localKey(new Date(s.start))===key).reduce((s,x)=>s+(x.duration||0),0)/60000;}
     if(state.workouts.some(w=>localKey(new Date(w.start))===key)){workoutDays++;totalWorkoutM+=state.workouts.filter(w=>localKey(new Date(w.start))===key).reduce((s,w)=>s+(w.duration||0),0)/60000;}
   }
- 
+
   grid.innerHTML=`
     <div class="analysis-card ${fastDays>=1?'good':'warn'}">
       <h3>⚡ Jejum</h3>
@@ -460,7 +460,7 @@ function renderAnalysis(){
       <p>${workoutDays} treino${workoutDays!==1?'s':''} · ${Math.round(totalWorkoutM)}min total. ${workoutDays===0?'Nenhum treino registrado.':workoutDays>=4?'Semana de treino completa!':workoutDays>=2?'Bom começo, pode mais.':'Abaixo do planejado.'}</p>
     </div>
   `;
- 
+
   // Barras de consistência
   const cats=[
     {label:'Muay Thai',target:2,actual:state.workouts.filter(w=>{const d=new Date(w.start);return w.type==='Muay Thai'&&(nowMs()-w.start)<7*DAY;}).length},
@@ -473,7 +473,7 @@ function renderAnalysis(){
     const pct=Math.min(100,Math.round(c.actual/c.target*100));
     return `<div class="progress-row"><span class="progress-label">${c.label}</span><div class="progress-track"><div class="progress-fill" style="width:${pct}%"></div></div><span class="progress-val">${c.actual}/${c.target}</span></div>`;
   }).join('');
- 
+
   // Insights
   const tips=[];
   if(fastDays===0) tips.push({t:'warn',title:'Sem jejum registrado',text:'Use o botão "Começar agora" na aba Hoje quando iniciar o jejum de terça.'});
@@ -482,7 +482,7 @@ function renderAnalysis(){
   if(streak()>=3) tips.push({t:'good',title:`${streak()} dias no ritmo!`,text:'Você está criando um hábito real. Cada dia conta.'});
   if(tips.length===0) tips.push({t:'good',title:'Continue assim',text:'Registre suas atividades diariamente para ver análises mais precisas.'});
   insights.innerHTML=tips.map(t=>`<div class="analysis-card ${t.t}"><h3>${t.title}</h3><p>${t.text}</p></div>`).join('');
- 
+
   // Peso
   if(state.weights.length>=2){
     const first=state.weights[0],last=state.weights[state.weights.length-1];
@@ -493,7 +493,7 @@ function renderAnalysis(){
     wa.innerHTML='<p class="empty">Registre seu peso na aba Alimentação para ver a análise.</p>';
   }
 }
- 
+
 // ═══════════════════════════════════════════════════════════
 // PLANNER E CALENDÁRIO
 // ═══════════════════════════════════════════════════════════
@@ -536,7 +536,7 @@ function renderPlanner(){
   document.getElementById('cycleProgress').textContent=inCycle()?`dia ${cycleDay()+1}`:'concluído';
   renderWeekAgenda();
 }
- 
+
 // ═══════════════════════════════════════════════════════════
 // SETTINGS
 // ═══════════════════════════════════════════════════════════
@@ -557,7 +557,7 @@ function saveSettings(){
   if(sel) sel.options[2].text=`Livro — ${state.settings.currentBook}`;
   persist();renderAll();toast('Ajustes salvos!');
 }
- 
+
 // ═══════════════════════════════════════════════════════════
 // BACKUP
 // ═══════════════════════════════════════════════════════════
@@ -582,7 +582,7 @@ function importBackup(e){
   };
   reader.readAsText(file);
 }
- 
+
 // ═══════════════════════════════════════════════════════════
 // PWA
 // ═══════════════════════════════════════════════════════════
@@ -592,7 +592,7 @@ function installApp(){
 }
 window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredPrompt=e;document.getElementById('installButton').style.display='inline-flex';});
 window.addEventListener('appinstalled',()=>{document.getElementById('installButton').style.display='none';document.getElementById('installText').textContent='Aplicativo instalado!';});
- 
+
 // ═══════════════════════════════════════════════════════════
 // RENDER GERAL
 // ═══════════════════════════════════════════════════════════
@@ -603,11 +603,11 @@ function renderAll(){
   const note=document.getElementById('dailyNote');
   if(note&&document.activeElement!==note) note.value=state.dailyNotes[todayKey()]||'';
 }
- 
+
 // Init
 renderAll();
 if(new URLSearchParams(window.location.search).get('tab')==='planner') switchView('planner');
- 
+
 // Tick a cada segundo para atualizar timers ativos
 setInterval(()=>{
   if(state.activeFast) renderFast();
@@ -622,13 +622,13 @@ if ('serviceWorker' in navigator) {
       .catch(err => console.log('SW erro:', err));
   });
 }
- 
+
 // ═══════════════════════════════════════════════════════════
 // ASSISTENTE IA
 // ═══════════════════════════════════════════════════════════
 let aiHistory = [];
 let aiTyping = false;
- 
+
 function buildAIContext() {
   const today = new Date();
   const wd = today.getDay();
@@ -636,10 +636,10 @@ function buildAIContext() {
   const lastWeight = state.weights[state.weights.length - 1];
   const w = weekNum();
   const fastHours = state.fasts.reduce((s,f)=>s+(f.duration||0),0)/3600000;
- 
+
   return `Você é o assistente pessoal de saúde e rotina dentro do app Meu Plano Diário.
 Responda sempre em português brasileiro, de forma direta e motivadora. Máximo 3 parágrafos curtos.
- 
+
 DADOS DO USUÁRIO HOJE (${today.toLocaleDateString('pt-BR')}):
 - Dia: ${r?.label||'Hoje'} | Rotina: ${r?.activities?.join(', ')||'livre'}
 - Semana ${w} do ciclo | Jejum desta fase: ${fastTargetForWeek(w)}h
@@ -651,7 +651,7 @@ DADOS DO USUÁRIO HOJE (${today.toLocaleDateString('pt-BR')}):
 - Peso atual: ${lastWeight?lastWeight.kg+'kg':'não registrado'} | Meta: 85kg
 - Livro: ${state.settings.currentBook||'Harry Potter: A Pedra Filosofal'}`;
 }
- 
+
 function addAIMessage(role, text, isTyping=false) {
   const chat = document.getElementById('aiChat');
   if (!chat) return;
@@ -668,23 +668,23 @@ function addAIMessage(role, text, isTyping=false) {
   chat.appendChild(div);
   chat.scrollTop = chat.scrollHeight;
 }
- 
+
 async function sendAIMessage() {
   const input = document.getElementById('aiInput');
   if (!input) return;
   const msg = input.value.trim();
   if (!msg || aiTyping) return;
- 
+
   const apiKey = localStorage.getItem('ai_key');
   if (!apiKey) { toast('Configure sua chave na seção abaixo!'); return; }
- 
+
   input.value = '';
   addAIMessage('user', msg);
   aiTyping = true;
   addAIMessage('assistant', '', true);
- 
+
   aiHistory.push({role:'user', content:msg});
- 
+
   try {
     const res = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -707,12 +707,12 @@ async function sendAIMessage() {
   }
   aiTyping = false;
 }
- 
+
 function askAI(text) {
   const input = document.getElementById('aiInput');
   if (input) { input.value = text; sendAIMessage(); }
 }
- 
+
 function saveAPIKey() {
   const key = document.getElementById('apiKeyInput')?.value.trim();
   if (!key || !key.startsWith('sk-ant-')) { toast('Chave inválida. Deve começar com sk-ant-'); return; }
@@ -728,7 +728,7 @@ function saveAPIKey() {
     addAIMessage('assistant', '👋 Olá! Estou pronto. Tenho acesso aos seus dados de jejum, treino e estudos. O que quer saber?');
   }
 }
- 
+
 function removeAPIKey() {
   localStorage.removeItem('ai_key');
   aiHistory = [];
@@ -738,7 +738,7 @@ function removeAPIKey() {
   if (chat) chat.innerHTML = '';
   toast('Chave removida.');
 }
- 
+
 // Verifica se já tem chave salva ao entrar na aba IA
 function checkSavedKey() {
   const key = localStorage.getItem('ai_key');
@@ -751,23 +751,10 @@ function checkSavedKey() {
     }
   }
 }
- 
+
 // initAIChat — chamada ao entrar na aba IA
 function initAIChat() {
   checkSavedKey();
 }
- 
-// checkSavedKey — verifica se já tem chave salva
-function checkSavedKey() {
-  const key = localStorage.getItem('ai_key');
-  const status = document.getElementById('aiKeyStatus');
-  const chat = document.getElementById('aiChat');
-  if (key) {
-    if (status) status.textContent = '✅ Assistente ativo — pronto para perguntas!';
-    if (chat && chat.children.length === 0) {
-      addAIMessage('assistant', '👋 Bem-vindo de volta! Tenho acesso aos seus dados. O que quer saber?');
-    }
-  } else {
-    if (status) status.textContent = 'Cole sua chave para ativar o assistente.';
-  }
-}
+
+// checkSavedKey — verifica se já tem chave salv
