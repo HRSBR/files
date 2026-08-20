@@ -336,41 +336,46 @@
     </div>
   </section>
 
-  <!-- ── ASSISTENTE IA ── -->
+      <!-- ── ASSISTENTE IA ── -->
   <section class="view" id="view-ai">
-    <div class="grid grid-main">
-      <section class="card sage">
-        <div class="section-head">
-          <div><h2>🤖 Assistente IA</h2><p>Seu coach pessoal com acesso aos seus dados reais.</p></div>
-          <button class="button ghost small" onclick="removeAPIKey()" title="Trocar chave">⚙️</button>
-        </div>
-        <div class="ai-chat-wrap">
-          <div id="aiChat"></div>
-          <div class="ai-input-row">
-            <input class="field" id="aiInput" placeholder="Pergunte qualquer coisa..." onkeydown="if(event.key==='Enter') sendAIMessage()" />
-            <button class="button sage" onclick="sendAIMessage()">Enviar</button>
+    <div class="stack">
+
+      <!-- Campo de chave sempre visível no topo -->
+      <section class="card clay" id="aiKeyCard">
+        <div class="section-head"><div><h2>🔑 Chave da API</h2><p id="aiKeyStatus">Cole sua chave para ativar o assistente.</p></div></div>
+        <div style="display:grid;gap:10px">
+          <input class="field" id="apiKeyInput" type="password" placeholder="sk-ant-api03-..." />
+          <div style="display:flex;gap:8px">
+            <button class="button sage" onclick="saveAPIKey()" style="flex:1">Ativar Assistente</button>
+            <button class="button ghost small" onclick="removeAPIKey()">Remover</button>
           </div>
         </div>
       </section>
-      <div class="stack">
-        <section class="card">
-          <div class="section-head"><div><h2>O que perguntar</h2><p>Exemplos de perguntas que o assistente responde.</p></div></div>
-          <div class="meal-list">
-            <div class="meal"><div class="meal-time">💪</div><div class="meal-text"><strong>Treino</strong>Como foi minha semana de treinos? Estou no ritmo certo?</div></div>
-            <div class="meal"><div class="meal-time">⚡</div><div class="meal-text"><strong>Jejum</strong>Dicas para aguentar o jejum de hoje. O que posso beber?</div></div>
-            <div class="meal"><div class="meal-time">🍽️</div><div class="meal-text"><strong>Alimentação</strong>O que devo comer agora para não furar o plano?</div></div>
-            <div class="meal"><div class="meal-time">📚</div><div class="meal-text"><strong>Estudos</strong>Como organizar meu tempo de estudo hoje?</div></div>
-            <div class="meal"><div class="meal-time">📊</div><div class="meal-text"><strong>Análise</strong>Como está meu progresso rumo aos 85kg?</div></div>
-          </div>
-        </section>
-        <section class="card clay">
-          <div class="section-head"><div><h2>Privacidade</h2><p>Seus dados ficam só no seu dispositivo.</p></div></div>
-          <p style="font-size:12px;color:var(--muted);line-height:1.6">A chave da API é salva apenas no seu celular/computador. Os dados do app (jejum, treino, peso) são enviados à IA apenas quando você faz uma pergunta, para personalizar a resposta.</p>
-        </section>
-      </div>
+
+      <!-- Chat -->
+      <section class="card sage">
+        <div class="section-head"><div><h2>🤖 Assistente IA</h2><p>Seu coach pessoal com acesso aos seus dados reais.</p></div></div>
+        <div id="aiChat" style="min-height:200px;max-height:400px;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px;background:var(--paper);border-radius:14px;border:1px solid var(--line);margin-bottom:12px"></div>
+        <div style="display:flex;gap:8px">
+          <input class="field" id="aiInput" placeholder="Pergunte qualquer coisa..." onkeydown="if(event.key==='Enter') sendAIMessage()" />
+          <button class="button sage" onclick="sendAIMessage()">Enviar</button>
+        </div>
+      </section>
+
+      <!-- Sugestões -->
+      <section class="card">
+        <div class="section-head"><div><h2>Sugestões rápidas</h2><p>Toca para enviar direto.</p></div></div>
+        <div style="display:grid;gap:8px">
+          <button class="button ghost" onclick="askAI('Como está meu progresso geral?')" style="text-align:left;padding:12px 14px;font-weight:400">📊 Como está meu progresso geral?</button>
+          <button class="button ghost" onclick="askAI('O que devo comer agora?')" style="text-align:left;padding:12px 14px;font-weight:400">🍽️ O que devo comer agora?</button>
+          <button class="button ghost" onclick="askAI('Dica para o jejum de hoje')" style="text-align:left;padding:12px 14px;font-weight:400">⚡ Dica para o jejum de hoje</button>
+          <button class="button ghost" onclick="askAI('Como organizar meus estudos hoje?')" style="text-align:left;padding:12px 14px;font-weight:400">📚 Como organizar meus estudos hoje?</button>
+          <button class="button ghost" onclick="askAI('Me motiva para treinar!')" style="text-align:left;padding:12px 14px;font-weight:400">💪 Me motiva para treinar!</button>
+        </div>
+      </section>
+
     </div>
   </section>
-
 </main>
 
 <div class="toast" id="toast"></div>
@@ -509,8 +514,8 @@ function switchView(name) {
   if(name==='analysis') renderAnalysis();
   if(name==='routine') renderRoutine();
   if(name==='settings') renderSettings();
-  if(name==='ai') initAIChat();
-  window.scrollTo({top:0,behavior:'smooth'});
+  if(name==='ai') { initAIChat(); checkSavedKey(); }
+window.scrollTo({top:0,behavior:'smooth'});
 }
 
 // ═══════════════════════════════════════════════════════════
